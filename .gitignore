@@ -1,0 +1,26 @@
+# Env
+.env
+
+# Python
+_pycache_/
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+
+# Output generado por el pipeline
+Backend/Salidas de los Agentes/
+
+
+# Ignorar variantes de .env (pero NO los .env.example)
+*/.env.
+!**/.env.example
+
+
