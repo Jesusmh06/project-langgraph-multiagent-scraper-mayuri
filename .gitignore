@@ -24,5 +24,4 @@ Backend/Salidas de los Agentes/
 !**/.env.example
 
 # Credentials
-credentials.json
-credentials_tools/
+Backend/credentials_tools/credentials.json
