@@ -37,5 +37,4 @@ dist/
 .cursor/
 
 # Credentials
-credentials.json
-credentials_tools/
+credetentials_tools/credentials.json
