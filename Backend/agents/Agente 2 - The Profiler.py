@@ -27,7 +27,7 @@ class ProfilerState(TypedDict, total=False):
 
 
 # --- Cadena LCEL (definida fuera del nodo) ---
-llm = ChatOpenAI(model="gpt-4o", temperature=0.0)
+llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0.0)
 
 prompt_profiler = ChatPromptTemplate.from_template("""Analiza el siguiente contenido extraído de una website y genera un **Perfil de Negocio** estructurado.
 

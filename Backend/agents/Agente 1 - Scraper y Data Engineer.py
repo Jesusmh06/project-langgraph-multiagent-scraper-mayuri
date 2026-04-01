@@ -107,7 +107,7 @@ def _split_content_for_llm(content: str, max_chars: int = MAX_CHUNK_CHARS) -> li
 
 def clean_scraped_data(
     scraped_items: list[dict[str, Any]],
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1-mini",
     temperature: float = 0.0,
     openai_api_key: str | None = None,
     system_prompt: str | None = None,
@@ -119,7 +119,7 @@ def clean_scraped_data(
 
     Args:
         scraped_items: Salida de scrape_website()
-        model: Modelo de OpenAI (default: gpt-4o-mini)
+        model: Modelo de OpenAI (default: gpt-4.1-mini)
         temperature: Temperatura para la generación (0.0 para resultados deterministas)
         openai_api_key: API key de OpenAI (o OPENAI_API_KEY en env)
         system_prompt: Prompt de sistema personalizado para la limpieza
@@ -232,7 +232,7 @@ def run_scraper_and_clean(
     url: str,
     max_crawl_pages: int = 10,
     max_crawl_depth: int = 3,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-4.1-mini",
     skip_cleaning: bool = False,
     **kwargs: Any,
 ) -> list[dict[str, Any]]:

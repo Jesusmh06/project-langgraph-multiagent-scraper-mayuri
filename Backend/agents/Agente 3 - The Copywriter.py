@@ -36,7 +36,7 @@ class CopywriterState(TypedDict, total=False):
 
 
 # --- LLM con tools bindeadas ---
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
+llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0.7)
 tools = [send_email]
 
 SYSTEM_PROMPT = """Eres un experto Copywriter de ventas B2B especializado en 'Cold Emailing'.
