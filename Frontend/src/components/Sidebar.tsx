@@ -20,7 +20,7 @@ export function Sidebar({ activeItem, onNavigate }: SidebarProps) {
     <aside className="flex w-[190px] flex-col border-r border-border bg-sidebar">
       <div className="flex items-center justify-between px-4 py-4">
         <div>
-          <p className="text-sm font-bold text-white">DATAPATH</p>
+          <p className="text-sm font-bold text-white">JESUS MAYURI SYSTEMS SAC</p>
           <p className="text-xs text-slate-400">SCRAPER</p>
         </div>
         <button
