@@ -35,3 +35,7 @@ dist/
 
 # Cursor local metadata
 .cursor/
+
+# Credentials
+credentials.json
+credentials_tools/
