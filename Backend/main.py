@@ -26,7 +26,7 @@ app = FastAPI(
 # CORS: Frontend en Vercel + localhost para desarrollo
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://project-langgraph-multiagent-scrape.vercel.app/"],
+    allow_origins=["https://project-langgraph-multiagent-scrape.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
