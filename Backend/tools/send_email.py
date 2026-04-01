@@ -1,6 +1,10 @@
 """
-Tool de envío de email por SMTP (Gmail).
-Usa APP_PASSWORD_GMAIL para autenticación.
+Tool de envío de email via Resend API (HTTP).
+Reemplaza el envío SMTP que falla en entornos con puerto 587 bloqueado.
+
+Variables de entorno requeridas:
+    RESEND_API_KEY      → API key de Resend (starts with 're_...')
+    EMAIL_REMITENTE     → Email del remitente (debe pertenecer al dominio verificado en Resend)
 
 Variables de entorno para la firma (opcionales, tienen valores por defecto):
     FIRMA_NOMBRE    → nombre del remitente
@@ -11,9 +15,7 @@ Variables de entorno para la firma (opcionales, tienen valores por defecto):
 """
 
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import requests
 
 from langchain_core.tools import tool
 
@@ -39,32 +41,45 @@ def _build_signature() -> str:
 
 @tool
 def send_email(recipient_email: str, subject: str, body: str) -> str:
-    """Envia un email via SMTP de Gmail al destinatario indicado.
+    """Envía un email via Resend API al destinatario indicado.
 
     Args:
-        recipient_email: Direccion de correo del destinatario.
+        recipient_email: Dirección de correo del destinatario.
         subject: Asunto del email.
         body: Cuerpo del email en texto plano (sin firma, se añade automáticamente).
     """
+    api_key      = os.getenv("RESEND_API_KEY")
     sender_email = os.getenv("EMAIL_REMITENTE")
-    app_password = os.getenv("APP_PASSWORD_GMAIL")
 
-    if not sender_email or not app_password:
-        return "Error: Variables EMAIL_REMITENTE o APP_PASSWORD_GMAIL no configuradas en .env"
+    if not api_key:
+        return "Error: Variable RESEND_API_KEY no configurada en .env"
+    if not sender_email:
+        return "Error: Variable EMAIL_REMITENTE no configurada en .env"
 
     full_body = body + _build_signature()
 
-    msg = MIMEMultipart()
-    msg["From"] = sender_email
-    msg["To"] = recipient_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(full_body, "plain", "utf-8"))
-
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(sender_email, app_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
-        return f"Email enviado exitosamente a {recipient_email}"
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from":    sender_email,
+                "to":      [recipient_email],
+                "subject": subject,
+                "text":    full_body,
+            },
+            timeout=15,
+        )
+
+        if response.status_code == 200:
+            return f"Email enviado exitosamente a {recipient_email}"
+        else:
+            return f"Error Resend {response.status_code}: {response.text}"
+
+    except requests.exceptions.Timeout:
+        return "Error: Timeout al conectar con Resend API"
     except Exception as e:
         return f"Error al enviar email: {str(e)}"
