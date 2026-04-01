@@ -1,13 +1,10 @@
 """
-Tool de envío de email via Gmail API (HTTP/OAuth2).
+Tool de envío de email via Resend API (HTTP).
 Reemplaza el envío SMTP que falla en entornos con puerto 587 bloqueado.
-Permite enviar a cualquier dirección de email, hasta 500/día gratis.
 
 Variables de entorno requeridas:
-    GMAIL_CLIENT_ID       → OAuth2 Client ID (termina en .apps.googleusercontent.com)
-    GMAIL_CLIENT_SECRET   → OAuth2 Client Secret (empieza con GOCSPX-)
-    GMAIL_REFRESH_TOKEN   → Refresh token obtenido con get_token.py
-    EMAIL_REMITENTE       → Tu email de Gmail (ej: tuemail@gmail.com)
+    RESEND_API_KEY      → API key de Resend (starts with 're_...')
+    EMAIL_REMITENTE     → Email del remitente (debe pertenecer al dominio verificado en Resend)
 
 Variables de entorno para la firma (opcionales, tienen valores por defecto):
     FIRMA_NOMBRE    → nombre del remitente
@@ -18,46 +15,9 @@ Variables de entorno para la firma (opcionales, tienen valores por defecto):
 """
 
 import os
-import base64
 import requests
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 from langchain_core.tools import tool
-
-
-# --- Constantes OAuth2 ---
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-GMAIL_SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
-
-
-def _get_access_token() -> tuple[str, str]:
-    """
-    Obtiene un access token fresco usando el refresh token.
-    Retorna (access_token, error_message). Si hay error, access_token es "".
-    """
-    client_id     = os.getenv("GMAIL_CLIENT_ID")
-    client_secret = os.getenv("GMAIL_CLIENT_SECRET")
-    refresh_token = os.getenv("GMAIL_REFRESH_TOKEN")
-
-    if not all([client_id, client_secret, refresh_token]):
-        return "", "Error: Variables GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET o GMAIL_REFRESH_TOKEN no configuradas en .env"
-
-    response = requests.post(
-        TOKEN_URL,
-        data={
-            "grant_type":    "refresh_token",
-            "client_id":     client_id,
-            "client_secret": client_secret,
-            "refresh_token": refresh_token,
-        },
-        timeout=10,
-    )
-
-    if response.status_code != 200:
-        return "", f"Error obteniendo access token: {response.text}"
-
-    return response.json().get("access_token", ""), ""
 
 
 def _build_signature() -> str:
@@ -79,58 +39,47 @@ def _build_signature() -> str:
     )
 
 
-def _build_raw_message(sender: str, recipient: str, subject: str, body: str) -> str:
-    """Construye el mensaje MIME y lo codifica en base64 para la Gmail API."""
-    msg = MIMEMultipart()
-    msg["From"]    = sender
-    msg["To"]      = recipient
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain", "utf-8"))
-
-    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
-    return raw
-
-
 @tool
 def send_email(recipient_email: str, subject: str, body: str) -> str:
-    """Envía un email via Gmail API al destinatario indicado.
+    """Envía un email via Resend API al destinatario indicado.
 
     Args:
         recipient_email: Dirección de correo del destinatario.
         subject: Asunto del email.
         body: Cuerpo del email en texto plano (sin firma, se añade automáticamente).
     """
+    api_key      = os.getenv("RESEND_API_KEY")
     sender_email = os.getenv("EMAIL_REMITENTE")
+
+    if not api_key:
+        return "Error: Variable RESEND_API_KEY no configurada en .env"
     if not sender_email:
         return "Error: Variable EMAIL_REMITENTE no configurada en .env"
 
-    # 1. Obtener access token fresco
-    access_token, error = _get_access_token()
-    if error:
-        return error
-
-    # 2. Construir mensaje
     full_body = body + _build_signature()
-    raw_message = _build_raw_message(sender_email, recipient_email, subject, full_body)
 
-    # 3. Enviar via Gmail API
     try:
         response = requests.post(
-            GMAIL_SEND_URL,
+            "https://api.resend.com/emails",
             headers={
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type":  "application/json",
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
-            json={"raw": raw_message},
+            json={
+                "from":    sender_email,
+                "to":      [recipient_email],
+                "subject": subject,
+                "text":    full_body,
+            },
             timeout=15,
         )
 
         if response.status_code == 200:
             return f"Email enviado exitosamente a {recipient_email}"
         else:
-            return f"Error Gmail API {response.status_code}: {response.text}"
+            return f"Error Resend {response.status_code}: {response.text}"
 
     except requests.exceptions.Timeout:
-        return "Error: Timeout al conectar con Gmail API"
+        return "Error: Timeout al conectar con Resend API"
     except Exception as e:
         return f"Error al enviar email: {str(e)}"
