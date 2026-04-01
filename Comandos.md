@@ -18,11 +18,7 @@ langgraph dev --allow-blocking
 ## Dockerfile:
 docker login
 
-docker buildx build \
-  --platform linux/amd64 \
-  -t jemayuh157/app-langgraph-no-conversacional-backend-mayuri:latest \
-  --push \
-  .
+docker buildx build --platform linux/amd64 -t jemayuh157/app-langgraph-no-conversacional-backend-mayuri:latest --push .
 ```
 
 # Frontend
